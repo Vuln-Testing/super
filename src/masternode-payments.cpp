@@ -238,6 +238,7 @@ CAmount CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, CAmount 
 
     for(unsigned mnlevel = CMasternode::LevelValue::MIN; mnlevel <= CMasternode::LevelValue::MAX; ++mnlevel) {
 
+		bool hasPayment = true;
         CScript payee;
 
         //spork
@@ -280,7 +281,7 @@ CAmount CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, CAmount 
             //ALTzGHwQB4iuoYVRMRogF8GTMdtnRGcGmU
             txNew.vout[1].nValue = masternodePayment;
         }
-    }
+		}
 
 
         if(!masternodePayment)
