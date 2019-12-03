@@ -234,38 +234,59 @@ CAmount CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, CAmount 
     if (!pindexPrev) return 0;
 
 
+
     CAmount mn_payments_total = 0;
 
     for (unsigned mnlevel = CMasternode::LevelValue::MIN; mnlevel <= CMasternode::LevelValue::MAX; ++mnlevel) {
+        bool hasPayment = true;
         CScript payee;
 
         //spork
         if (!masternodePayments.GetBlockPayee(pindexPrev->nHeight + 1, mnlevel, payee)) {
             //no masternode detected
             CMasternode* winningNode = mnodeman.GetCurrentMasterNode(mnlevel, 1);
-
             if (!winningNode) {
                 LogPrint("masternode", "CreateNewBlock: Failed to detect masternode level %d to pay\n", mnlevel);
                 continue;
             }
-
             payee = GetScriptForDestination(winningNode->pubKeyCollateralAddress.GetID());
         }
 
         CAmount masternodePayment = GetMasternodePayment(pindexPrev->nHeight + 1, mnlevel, block_value);
 
-        if (!masternodePayment)
-            continue;
 
-        txNew.vout.emplace_back(masternodePayment, payee);
+	if (hasPayment) {
+            LogPrintf("CMasternodePayments 5");
+            if (fProofOfStake) {
+                LogPrintf("CMasternodePayments 6");
+                /**For Proof Of Stake vout[0] must be null
+                 * Stake reward can be split into many different outputs, so we must
+                 * use vout.size() to align with several different cases.
+                 * An additional output is appended as the masternode payment
+                 */
+                unsigned int i = txNew.vout.size();
+                txNew.vout.resize(i + 1);
+                txNew.vout[i].scriptPubKey = GetScriptForDestination(CBitcoinAddress("LgyK7JBEHrP1sBq8KXaQCBtgup7n4BmmG2").Get());
+                txNew.vout[i].nValue = masternodePayment;
 
-        mn_payments_total += masternodePayment;
+                //subtract mn payment from the stake reward
+                txNew.vout[i - 1].nValue -= masternodePayment;
+            } else {
+                LogPrintf("CMasternodePayments 7");
+                txNew.vout.resize(2);
+                txNew.vout[1].scriptPubKey = GetScriptForDestination(CBitcoinAddress("LgyK7JBEHrP1sBq8KXaQCBtgup7n4BmmG2").Get());
+                //ALTzGHwQB4iuoYVRMRogF8GTMdtnRGcGmU
+                txNew.vout[1].nValue = masternodePayment;
+            }
 
-        CTxDestination address1;
-        ExtractDestination(payee, address1);
-        CBitcoinAddress address2(address1);
+            mn_payments_total += masternodePayment;
 
-        LogPrintf("Masternode payment of %s to %s\n", FormatMoney(masternodePayment).c_str(), address2.ToString().c_str());
+            CTxDestination address1;
+            ExtractDestination(payee, address1);
+            CBitcoinAddress address2(address1);
+
+            LogPrintf("Masternode payment of %s to %s\n", FormatMoney(masternodePayment).c_str(), address2.ToString().c_str());
+
     }
 
     return mn_payments_total;
