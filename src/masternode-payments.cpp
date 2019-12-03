@@ -255,7 +255,7 @@ CAmount CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, CAmount 
         CAmount masternodePayment = GetMasternodePayment(pindexPrev->nHeight + 1, mnlevel, block_value);
 
 
-	if (hasPayment) {
+        if (hasPayment) {
             LogPrintf("CMasternodePayments 5");
             if (fProofOfStake) {
                 LogPrintf("CMasternodePayments 6");
@@ -286,10 +286,10 @@ CAmount CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, CAmount 
             CBitcoinAddress address2(address1);
 
             LogPrintf("Masternode payment of %s to %s\n", FormatMoney(masternodePayment).c_str(), address2.ToString().c_str());
+        }
 
+        return mn_payments_total;
     }
-
-    return mn_payments_total;
 }
 
 int CMasternodePayments::GetMinMasternodePaymentsProto()
